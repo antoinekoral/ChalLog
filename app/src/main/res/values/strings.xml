@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">ChalLog</string>
+    <string name="title_accueil">Choix du module</string>
+    <string name="title_button1">Gestion du RU</string>
+    <string name="title_button2">Gestion des navettes</string>
+    <string name="title_button3">Paiement par multipass</string>
+    <string name="title_button4">Associer carte à participant</string>
+    <string name="title_ru">Gestion du RU</string>
 </resources>
