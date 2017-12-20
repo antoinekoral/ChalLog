@@ -6,4 +6,6 @@
     <string name="title_button3">Paiement par multipass</string>
     <string name="title_button4">Associer carte à participant</string>
     <string name="title_ru">Gestion du RU</string>
+
+    <string name="explanation">Tout est OK.</string>
 </resources>
