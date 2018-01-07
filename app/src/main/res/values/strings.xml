@@ -8,4 +8,6 @@
     <string name="title_ru">Gestion du RU</string>
 
     <string name="explanation">Tout est OK.</string>
+
+    <string name="message_tag_detected">NFC Tag Detected !</string>
 </resources>

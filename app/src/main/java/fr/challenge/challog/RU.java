@@ -1,6 +1,18 @@
 package fr.challenge.challog;
 
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.MifareClassic;
+import android.nfc.tech.Ndef;
+import android.nfc.tech.NdefFormatable;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,26 +27,115 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
+
+import static android.nfc.tech.NdefFormatable.get;
 
 public class RU extends AppCompatActivity {
+
+    public static final String TAG = RU.class.getSimpleName();
+
+    public static final String ERROR_DETECTED = "No NFC tag detected!";
+    public static final String WRITE_SUCCESS = "Text written to the NFC tag successfully!";
+    public static final String WRITE_ERROR = "Error during writing, is the NFC tag close enough to your device?";
+    NfcAdapter nfcAdapter;
+    PendingIntent pendingIntent;
+    IntentFilter writeTagFilters[];
+    boolean writeMode;
+    Tag detectedTag;
+    Context context;
+    Button btnWrite;
+    private NfcAdapter mNfcAdapter;
+
+    private TextView text;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ru);
+
+        context = this;
+
+        text = (TextView) findViewById(R.id.textViewRU);
+        //btnWrite = (Button) findViewById(R.id.button);
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
+        IntentFilter ndefDetected = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        IntentFilter techDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
+        IntentFilter[] nfcIntentFilter = new IntentFilter[]{techDetected,tagDetected,ndefDetected};
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        if(mNfcAdapter!= null)
+            mNfcAdapter.enableForegroundDispatch(this, pendingIntent, nfcIntentFilter, null);
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mNfcAdapter!= null)
+            mNfcAdapter.disableForegroundDispatch(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        detectedTag = intent.getParcelableExtra(mNfcAdapter.EXTRA_TAG);
+
+        Log.d(TAG, "onNewIntent: " + intent.getAction());
+
+        if (detectedTag != null) {
+            Toast.makeText(this, getString(R.string.message_tag_detected), Toast.LENGTH_SHORT).show();
+            byte[] list = detectedTag.getId();
+            String message = "";
+            for (int i=0;i<list.length;i++) {
+                message += list[i] + ";";
+            }
+            Log.d(TAG,"Réponse : " + message);
+            text.setText(message);
+            //readFromTag(getIntent());
+        }
+    }
+
+    public void readFromTag(Intent intent){
+
+        if (intent != null && NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction())) {
+
+            Parcelable[] rawMessages =
+
+                    intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+
+            if (rawMessages != null) {
+
+                NdefMessage[] messages = new NdefMessage[rawMessages.length];
+
+                for (int i = 0; i < rawMessages.length; i++) {
+
+                    messages[i] = (NdefMessage) rawMessages[i];
+
+                }
+
+                text.setText(messages.toString());
+
+            } else {
+                Toast.makeText(this, "DID'NT WORK.", Toast.LENGTH_SHORT).show();
+            }
+
+        } else {
+            Toast.makeText(this, "DID'NT WORK.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void bipAuthorise(View view) throws IOException, JSONException {
@@ -42,7 +143,6 @@ public class RU extends AppCompatActivity {
         RelativeLayout monLayout = (RelativeLayout) findViewById(R.id.gestionRU);
         monLayout.setBackgroundColor(Color.GREEN);
 
-        final TextView text = (TextView) findViewById(R.id.textViewRU);
         //String prenom = "Prenom";
         //String nom = "Nom";
         //text.setText(prenom +" "+ nom);
